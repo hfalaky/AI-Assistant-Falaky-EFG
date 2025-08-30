@@ -1,0 +1,18 @@
+# Core
+pandas
+numpy
+
+# Async + scraping
+crawl4ai
+beautifulsoup4
+lxml
+
+# Web app
+streamlit
+
+# LLM client
+groq
+httpx
+
+# Utils
+python-dateutil
