@@ -11,6 +11,7 @@ def preprocess_portfolio(file_path="Active_Clients_Portfolio.csv"):
       - Handle missing values
       - Drop unusable rows
       - Enforce correct data types
+      - Normalize sectors
       - Return clean DataFrame
     """
 
@@ -46,7 +47,7 @@ def preprocess_portfolio(file_path="Active_Clients_Portfolio.csv"):
     for col in cat_cols:
         df[col] = df[col].fillna("Unknown")
 
-    # 6. Optional: remove duplicate clients (keep first)
+    # 6. remove duplicate clients (keep first)
     df = df.drop_duplicates(subset=["clientid", "clientaccprofileid"])
 
     # 7. Enforce correct data types for this portfolio format
@@ -90,6 +91,54 @@ def preprocess_portfolio(file_path="Active_Clients_Portfolio.csv"):
                 df[col] = df[col].astype(dtype, errors="ignore")
             except Exception as e:
                 print(f"⚠️ Could not convert {col} to {dtype}: {e}")
+
+    # 8. Normalize sectors into standard categories
+    SECTOR_NORMALIZE = {
+        
+        "banking": "Financials",
+        "basic materials": "Materials",
+        "consumer discretionary": "Consumer Discretionary",
+        "consumer services": "Consumer Discretionary",
+        "consumer staples": "Consumer Staples",
+        "energy": "Energy",
+        "food": "Consumer Staples",
+        "financials": "Financials",
+        "health care": "Healthcare",
+        "healthcare": "Healthcare",
+        "industrial": "Industrials",
+        "industrials": "Industrials",
+        "industries": "Industrials",
+        "investment": "Financials",
+        "information technology": "Technology",
+        "technology": "Technology",
+        "materials": "Materials",
+        "real estate": "Real Estate",
+        "services": "Industrials",              # set to "Consumer Discretionary" if your data is mostly consumer-facing
+        "telecommunication services": "Telecommunications",
+        "telecommunications": "Telecommunications",
+        "tourism": "Consumer Discretionary",
+        "trade": "Consumer Discretionary",
+        # “country + Securities” treated as Financials (brokerage/investment exposure)
+        "jordan securities": "Financials",
+        "pakistani securities": "Financials",
+        "kenian securities": "Financials",
+    }
+
+    def _norm_sector(x: str) -> str:
+        if pd.isna(x): return "Unknown"
+        key = str(x).strip().lower()
+        return SECTOR_NORMALIZE.get(key, "Others")
+
+    for col in ["mostprofitablesector", "mosttradedsector"]:
+        if col in df.columns:
+            df[f"{col}_norm"] = df[col].apply(_norm_sector)
+
+    if "mosttradedsector_norm" in df.columns or "mostprofitablesector_norm" in df.columns:
+        df["primary_sector_norm"] = (
+            df.get("mosttradedsector_norm", pd.Series(["Unknown"]*len(df)))
+              .where(lambda s: s != "Unknown",
+                     df.get("mostprofitablesector_norm", pd.Series(["Unknown"]*len(df))))
+        )
 
     print(f"Final shape after preprocessing: {df.shape}")
     return df
