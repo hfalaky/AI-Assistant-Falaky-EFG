@@ -163,13 +163,12 @@ def market_df_to_json(df, output_file="Egypt_Equities.json"):
     return equities
 
 
-
+#test only if uncalled
 if __name__ == "__main__":
     df = get_market_data()
     print("✅ Scraped market data")
     print(df.head())
 
-    # Safety: ensure no 'unnamed' and floats rounded before saving
     df = df.loc[:, ~df.columns.str.lower().str.startswith("unnamed")]
     float_cols = df.select_dtypes(include="float").columns
     if len(float_cols) > 0:
